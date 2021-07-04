@@ -17,7 +17,7 @@ $mqtt->subscribe('outTemC', function ($topic, $message) {
    $message="\"".$today."\",".$message."\n";
    file_put_contents("dump.csv",$message,FILE_APPEND);
    $i++;
-   if ($i%10==0){
+   if ($i%100==0){
     echo sprintf("%s\n",$message);
    }
     

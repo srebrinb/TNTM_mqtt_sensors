@@ -17,10 +17,10 @@
   - Open the "Tools -> Board -> Board Manager" and click install for the ESP8266"
   - Select your ESP8266 in "Tools -> Board"
 */
-unsigned long myTime;
+
 
 #include <WiFi.h>
-#include <WiFiMulti.h>
+
 #include <PubSubClient.h>
 
 // Update these with values suitable for your network.
@@ -32,10 +32,10 @@ const char* mqtt_server = "192.168.1.10";
 WiFiClient espClient;
 PubSubClient client(espClient);
 unsigned long lastMsg = 0;
-#define MSG_BUFFER_SIZE  (50)
+#define MSG_BUFFER_SIZE  (150)
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
-#define BUILTIN_LED 2
+
 
 void setup_wifi() {
 
@@ -45,7 +45,7 @@ void setup_wifi() {
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
-  WiFi.mode(WIFI_STA);
+ // WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -53,7 +53,7 @@ void setup_wifi() {
     Serial.print(".");
   }
 
-  randomSeed(micros());
+  //randomSeed(micros());
 
   Serial.println("");
   Serial.println("WiFi connected");
@@ -81,9 +81,21 @@ void setup_sensor(){
 }
 //End Temperature DS18B20 OneWire
 //Gas
-int Gas_analog = 23;    // used for ESP32
+#include "MQ135.h"
+/* https://github.com/espressif/arduino-esp32/issues/102
+  This happens because ADC2 pins can not be used when WiFi is used.
+   On the other hand, ADC1 pins can be used even when WiFi is enabled.
+ */
+///https://www.electroduino.com/air-pollution-monitoring-system-using-arduino-and-mq135-air-quality-sensor/
+int Gas_analog = 33;    // used for ESP32
 int Gas_digital = 35;   // used for ESP32
+MQ135 gasSensor = MQ135(Gas_analog);
 void setup_gas(){ 
+ // pinMode(gasSensor,INPUT);
+ // adcAttachPin(gasSensor);
+ // analogReadResolution(11);
+ // analogSetAttenuation(ADC_6db);
+ 
   pinMode(Gas_digital, INPUT);
 }
 //End Gas
@@ -96,7 +108,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
-
+/*
   // Switch on the LED if an 1 was received as first character
   if ((char)payload[0] == '1') {
     digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
@@ -106,7 +118,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   } else {
     digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
   }
-
+*/
 }
 
 void reconnect() {
@@ -134,20 +146,33 @@ void reconnect() {
 }
 
 void setup() {
-  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+  
+//  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
+  
   setup_wifi();
+
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
-
+ 
   setup_sensor();
+
   setup_gas();
 }
 
 void loop() {
-/*
-  int gassensorAnalog = analogRead(Gas_analog);
+
+  
+  float air_quality = gasSensor.getPPM();
+  float air_RZero = gasSensor.getRZero();
+  float org_gassensorAnalog =analogRead(Gas_analog);
+  float gassensorAnalog = org_gassensorAnalog * 0.004882814;
   int gassensorDigital = digitalRead(Gas_digital);
+  Serial.print("Air Quality: ");  
+  Serial.print(air_quality);
+  Serial.print("  PPM : ");
+  Serial.println(air_RZero);
+
 
   Serial.print("Gas Sensor: ");
   Serial.print(gassensorAnalog);
@@ -158,10 +183,10 @@ void loop() {
   Serial.print("\t");
   Serial.println();
   //end Gas
-
-
 delay(1000);
-*/
+
+
+
   if (!client.connected()) {
     reconnect();
   }
@@ -176,9 +201,10 @@ delay(1000);
     ++value;
    // snprintf (msg, MSG_BUFFER_SIZE, "{\"s1\":{\"t\":\"%ld\",\"id\":\"#%ld\",\"tC\":%f}}", now,value,temperatureC);
    // snprintf (msg, MSG_BUFFER_SIZE, "{\"s1\":\"%ld,#%ld,%f\"}", now,value,temperatureC);
-   snprintf (msg, MSG_BUFFER_SIZE, "\"%ld\",\"#%ld\",%f", now,value,temperatureC);
+   snprintf (msg, MSG_BUFFER_SIZE, "\"%ld\",\"#%ld\",%f,%f,%f,%f,%f,%d", now,value,temperatureC,org_gassensorAnalog,air_quality,air_RZero,gassensorAnalog,gassensorDigital);
     Serial.print("Publish message: ");
     Serial.println(msg);
-    client.publish("outTemC", msg,true);
+    client.publish("outTemC", msg,false);
   }
+  
 }
