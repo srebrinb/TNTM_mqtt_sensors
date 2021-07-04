@@ -27,7 +27,7 @@
 
 const char* ssid = "linksys-Srebrin";
 const char* password = "9D81BB8721";
-const char* mqtt_server = "192.168.1.10";
+const char* mqtt_server = "3.67.237.255";//"192.168.1.10";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -161,39 +161,19 @@ void setup() {
 }
 
 void loop() {
-
-  
-  float air_quality = gasSensor.getPPM();
-  float air_RZero = gasSensor.getRZero();
-  float org_gassensorAnalog =analogRead(Gas_analog);
-  float gassensorAnalog = org_gassensorAnalog * 0.004882814;
-  int gassensorDigital = digitalRead(Gas_digital);
-  Serial.print("Air Quality: ");  
-  Serial.print(air_quality);
-  Serial.print("  PPM : ");
-  Serial.println(air_RZero);
-
-
-  Serial.print("Gas Sensor: ");
-  Serial.print(gassensorAnalog);
-  Serial.print("\t");
-  Serial.print("Gas Class: ");
-  Serial.print(gassensorDigital);
-  Serial.print("\t");
-  Serial.print("\t");
-  Serial.println();
-  //end Gas
-delay(1000);
-
-
-
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
 
   unsigned long now = millis();
-  if (now - lastMsg > 2000) {
+  if (now - lastMsg > 1000) {
+    float air_quality = gasSensor.getPPM();
+    float air_RZero = gasSensor.getRZero();
+    float org_gassensorAnalog =analogRead(Gas_analog);
+    float gassensorAnalog = org_gassensorAnalog * 0.004882814;
+    int gassensorDigital = digitalRead(Gas_digital);
+    
     sensors.requestTemperatures(); 
     float temperatureC = sensors.getTempCByIndex(0);
     Serial.println(temperatureC);
@@ -201,10 +181,10 @@ delay(1000);
     ++value;
    // snprintf (msg, MSG_BUFFER_SIZE, "{\"s1\":{\"t\":\"%ld\",\"id\":\"#%ld\",\"tC\":%f}}", now,value,temperatureC);
    // snprintf (msg, MSG_BUFFER_SIZE, "{\"s1\":\"%ld,#%ld,%f\"}", now,value,temperatureC);
-   snprintf (msg, MSG_BUFFER_SIZE, "\"%ld\",\"#%ld\",%f,%f,%f,%f,%f,%d", now,value,temperatureC,org_gassensorAnalog,air_quality,air_RZero,gassensorAnalog,gassensorDigital);
+    snprintf (msg, MSG_BUFFER_SIZE, "\"%ld\",\"#%ld\",%f,%f,%f,%f,%f,%d", now,value,temperatureC,org_gassensorAnalog,air_quality,air_RZero,gassensorAnalog,gassensorDigital);
     Serial.print("Publish message: ");
     Serial.println(msg);
-    client.publish("outTemC", msg,false);
+    client.publish("srebrinb/sensor/outTemC", msg,false);
   }
   
 }

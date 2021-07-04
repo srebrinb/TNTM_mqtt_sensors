@@ -1,14 +1,14 @@
 <?php
 require __DIR__ . '/../vendor/autoload.php';
-$server   = '192.168.1.10';
+$server   = '3.67.237.255';//'192.168.1.10';
 $port     = 1883;
-$clientId = 'php-test-subscriber';
+$clientId = 'php-sensor-subscriber';
 //file_put_contents("dump.dat","[");
 $mqtt = new \PhpMqtt\Client\MqttClient($server, $port, $clientId);
 $mqtt->connect();
 $i=0;
 $messages="";
-$mqtt->subscribe('outTemC', function ($topic, $message) {
+$mqtt->subscribe('srebrinb/sensor/outTemC', function ($topic, $message) {
     global $i,$messages;
     
     //$message=json_decode($message);
