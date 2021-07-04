@@ -28,6 +28,9 @@
 const char* ssid = "linksys-Srebrin";
 const char* password = "9D81BB8721";
 const char* mqtt_server = "3.67.237.255";//"192.168.1.10";
+const char* outTopic="srebrinb/sensor/outTemC";
+const char* outTopicNotifi="srebrinb/sensor/Notifi";
+const char* inTopic="srebrinb/sensor/inCmd";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -132,9 +135,11 @@ void reconnect() {
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
       // Once connected, publish an announcement...
-      client.publish("outTopic", "hello world");
+      char msgconn[50];
+      snprintf (msgconn, 50, "connected,%s,%s",clientId,inTopic);
+      client.publish("outTopicNotifi",msgconn);
       // ... and resubscribe
-      client.subscribe("inTopic");
+      client.subscribe(inTopic);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -176,7 +181,6 @@ void loop() {
     
     sensors.requestTemperatures(); 
     float temperatureC = sensors.getTempCByIndex(0);
-    Serial.println(temperatureC);
     lastMsg = now;
     ++value;
    // snprintf (msg, MSG_BUFFER_SIZE, "{\"s1\":{\"t\":\"%ld\",\"id\":\"#%ld\",\"tC\":%f}}", now,value,temperatureC);
@@ -184,7 +188,7 @@ void loop() {
     snprintf (msg, MSG_BUFFER_SIZE, "\"%ld\",\"#%ld\",%f,%f,%f,%f,%f,%d", now,value,temperatureC,org_gassensorAnalog,air_quality,air_RZero,gassensorAnalog,gassensorDigital);
     Serial.print("Publish message: ");
     Serial.println(msg);
-    client.publish("srebrinb/sensor/outTemC", msg,false);
+    client.publish(outTopic, msg,false);
   }
   
 }
